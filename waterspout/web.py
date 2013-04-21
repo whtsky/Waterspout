@@ -21,6 +21,22 @@ class RequestHandler(tornado.web.RequestHandler):
         """
         self.write(self.render_string(template_name=template_name, **kwargs))
 
+    @property
+    def template_namespace(self):
+        """
+        A dictionary to be used as the default template namespace.
+        """
+        return dict(
+            handler=self,
+            request=self.request,
+            current_user=self.current_user,
+            locale=self.locale,
+            _=self.locale.translate,
+            static_url=self.static_url,
+            xsrf_form_html=self.xsrf_form_html,
+            reverse_url=self.reverse_url
+        )
+
     def render_string(self, template_name, **kwargs):
         """Generate the given template with the given arguments.
 
@@ -32,5 +48,7 @@ class RequestHandler(tornado.web.RequestHandler):
         :param kwargs:
           arguments passing to the template
         """
-        var = self.application.env.get_template(template_name)
+        env = self.application.env
+        env.globals.update(self.template_namespace)
+        var = env.get_template(template_name)
         return var.render(**kwargs)
