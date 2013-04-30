@@ -117,10 +117,21 @@ class Application(object):
             handlers=self.handlers,
             **self.settings
         )
-        application.env = Environment(
+        if "autoescape" in self.settings:
+            autoescape = self.settings["autoescape"]
+        else:
+            def guess_autoescape(template_name):
+                if template_name is None or '.' not in template_name:
+                    return False
+                ext = template_name.rsplit('.', 1)[1]
+                return ext in ('html', 'htm', 'xml')
+            autoescape = guess_autoescape
+        env = Environment(
+            autoescape=autoescape,
             loader=FileSystemLoader(self.template_paths)
         )
-        application.env.filters = self.filters
+        env.filters = self.filters
+        application.env = env
         return application
 
     def run(self):
