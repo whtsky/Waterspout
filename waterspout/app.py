@@ -28,7 +28,9 @@ class Application(object):
             caller = inspect.stack()[1]
             caller_module = inspect.getmodule(caller[0])
             self.root_path = os.path.dirname(os.path.abspath(caller_module.__file__))
+
         self.handlers = handlers
+
         if "static_path" not in settings:
             settings["static_path"] = os.path.join(self.root_path, "static")
         self.settings = settings
@@ -37,6 +39,29 @@ class Application(object):
             self.template_paths = [os.path.join(self.root_path, "templates")]
         else:
             self.template_paths = [template_path]
+
+        self.filters = {}
+
+    def filter(self, f):
+        """
+        Decorator to add a filter to Waterspout Application.
+
+        Add your filter like ::
+
+            application = Application()
+
+            @application.filter
+            def sort(l):
+                return l.sort()
+
+        And use it in your template ::
+
+            {{ [1, 4, 5, 3, 2] | sort }}
+
+        :param f: function to add as a filter.
+        """
+        self.filters[f.__name__] = f
+        return f
 
     def add_handler(self, pattern, handler_class, kwargs=None, name=None):
         """
@@ -70,7 +95,7 @@ class Application(object):
           URL prefix for this app.
           Will be ``/<app_name>`` by default
         """
-        if app.registered:
+        if app.application is not None:
             print("%s has been registered before." % app)
             return
         if not prefix:
@@ -83,7 +108,8 @@ class Application(object):
                 url = '%s%s' % (prefix, handler_class[0])
                 new_handler_class = [url] + list(handler_class[1:])
                 self.handlers.append(tuple(new_handler_class))
-        app.registered = True
+        self.filters.update(app.filters)
+        app.application = self
 
     @property
     def application(self):
@@ -94,6 +120,7 @@ class Application(object):
         application.env = Environment(
             loader=FileSystemLoader(self.template_paths)
         )
+        application.env.filters = self.filters
         return application
 
     def run(self):
@@ -114,6 +141,25 @@ class Application(object):
 
 
 class App(object):
+    """
+    The App in Waterspout is just like the App in Django. A Waterspout Application consists of plenty of Apps.
+
+    The minimal App ::
+
+        from waterspout.app import App
+        from waterspout.web import RequestHandler
+
+
+        class Foo(RequestHandler):
+            def get(self):
+                self.write('This is foo app.')
+
+        handlers = [
+            ('/', Foo)
+        ]
+
+        app = App('app name', __name__, handlers)
+    """
     def __init__(self, name, import_name=None, handlers=None):
         self.name = name
         if import_name is not None:
@@ -126,7 +172,31 @@ class App(object):
         if handlers is None:
             handlers = []
         self.handlers = handlers
-        self.registered = False
+        self.application = None
+        self.filters = {}
+
+    def filter(self, f):
+        """
+        Decorator to add a filter to Waterspout App.
+
+        Add your filter like ::
+
+            app = App('test')
+
+            @app.filter
+            def sort(l):
+                return l.sort()
+
+        And use it in your template ::
+
+            {{ [1, 4, 5, 3, 2] | sort }}
+
+        :param f: function to add as a filter.
+        """
+        self.filters[f.__name__] = f
+        if self.application is not None:
+            self.application.filters.update(self.filters)
+        return f
 
     def add_handler(self, pattern, handler_class, kwargs=None, name=None):
         """
