@@ -1,6 +1,7 @@
 __all__ = ['Application', 'App']
 
 import os
+import inspect
 
 import tornado.web
 import tornado.options
@@ -18,31 +19,47 @@ class Application(object):
     """
     The main Waterspout Application.
     """
-    def __init__(self, handlers=None, default_host="", transforms=None,
-                 wsgi=False, **settings):
+    def __init__(self, import_name=None, handlers=None, **settings):
         if handlers is None:
             handlers = []
+        if import_name is not None:
+            self.root_path = get_root_path(import_name)
+        else:
+            caller = inspect.stack()[1]
+            caller_module = inspect.getmodule(caller[0])
+            self.root_path = os.path.dirname(os.path.abspath(caller_module.__file__))
         self.handlers = handlers
-        self.default_host = default_host
-        self.transforms = transforms
-        self.wsgi = wsgi
+        if "static_path" not in settings:
+            settings["static_path"] = os.path.join(self.root_path, "static")
         self.settings = settings
         template_path = settings.get("template_path", None)
         if not (template_path and isinstance(template_path, str)):
-            self.template_paths = []
+            self.template_paths = [os.path.join(self.root_path, "templates")]
         else:
             self.template_paths = [template_path]
 
-    def add_handler(self, rule, handler):
+    def add_handler(self, pattern, handler_class, kwargs=None, name=None):
         """
-        Directly add a handler to Application.
-        Note that adding handlers to an App and
-        register apps to Application is recommended.
+        Add a handler_class to App.
 
-        :param rule:
-        :param handler:
+        :param pattern:
+          Regular expression to be matched.  Any groups in the regex
+          will be passed in to the handler's get/post/etc methods as
+          arguments.
+        :param handler_class: RequestHandler subclass to be invoked.
+        :param kwargs:
+          (optional) A dictionary of additional arguments to be passed
+          to the handler's constructor.
+        :param name:
+          (optional) A name for this handler.  Used by
+          Application.reverse_url.
         """
-        self.handlers.append([rule, handler])
+        urlspec = [pattern, handler_class]
+        if kwargs:
+            urlspec.append(kwargs)
+        if name:
+            urlspec.append(name)
+        self.handlers.append(urlspec)
 
     def register_app(self, app, prefix=''):
         """
@@ -62,19 +79,16 @@ class Application(object):
         if prefix == '/':
             self.handlers += app.handlers
         else:
-            for handler in app.handlers:
-                url = '%s%s' % (prefix, handler[0])
-                new_handler = [url] + list(handler[1:])
-                self.handlers.append(tuple(new_handler))
+            for handler_class in app.handlers:
+                url = '%s%s' % (prefix, handler_class[0])
+                new_handler_class = [url] + list(handler_class[1:])
+                self.handlers.append(tuple(new_handler_class))
         app.registered = True
 
     @property
     def application(self):
         application = tornado.web.Application(
             handlers=self.handlers,
-            default_host=self.default_host,
-            transforms=self.transforms,
-            wsgi=self.wsgi,
             **self.settings
         )
         application.env = Environment(
@@ -100,21 +114,42 @@ class Application(object):
 
 
 class App(object):
-    def __init__(self, name, import_name, handlers=None):
+    def __init__(self, name, import_name=None, handlers=None):
         self.name = name
-        self.import_name = import_name
-        self.root_path = get_root_path(import_name)
+        if import_name is not None:
+            self.root_path = get_root_path(import_name)
+        else:
+            caller = inspect.stack()[1]
+            caller_module = inspect.getmodule(caller[0])
+            self.root_path = os.path.dirname(os.path.abspath(caller_module.__file__))
         self.template_path = os.path.join(self.root_path, "templates")
         if handlers is None:
             handlers = []
         self.handlers = handlers
         self.registered = False
 
-    def add_handler(self, rule, handler):
+    def add_handler(self, pattern, handler_class, kwargs=None, name=None):
         """
-        Add a handler to App.
+        Add a handler_class to App.
+
+        :param pattern:
+          Regular expression to be matched.  Any groups in the regex
+          will be passed in to the handler's get/post/etc methods as
+          arguments.
+        :param handler_class: RequestHandler subclass to be invoked.
+        :param kwargs:
+          (optional) A dictionary of additional arguments to be passed
+          to the handler's constructor.
+        :param name:
+          (optional) A name for this handler.  Used by
+          Application.reverse_url.
         """
-        self.handlers.append([rule, handler])
+        urlspec = [pattern, handler_class]
+        if kwargs:
+            urlspec.append(kwargs)
+        if name:
+            urlspec.append(name)
+        self.handlers.append(urlspec)
 
     def __repr__(self):
         return '<App %s>' % self.name

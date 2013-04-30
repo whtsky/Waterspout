@@ -1,8 +1,6 @@
-import os
 from waterspout.app import Application
 
-base = os.path.abspath(os.path.dirname(__file__))
-application = Application(static_path=os.path.join(base, "static"))
+application = Application()
 
 
 import foo
