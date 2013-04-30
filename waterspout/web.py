@@ -1,17 +1,22 @@
-__all__ = ['RequestHandler']
+__all__ = ['RequestHandler', 'APIHandler']
 
 import waterspout
 import tornado.web
 import tornado.escape
 
 
-class RequestHandler(tornado.web.RequestHandler):
+class WaterspoutHandler(tornado.web.RequestHandler):
     """
-    Base RequestHandler for Waterspout Application
+    The most basic RequestHandler for Waterspout.
     """
     def set_default_headers(self):
         self._headers["Server"] = waterspout.server_name
 
+
+class RequestHandler(WaterspoutHandler):
+    """
+    Base RequestHandler for Waterspout Application
+    """
     def render(self, template_name, **kwargs):
         """
         Renders the template with the given arguments as the response.
@@ -88,13 +93,10 @@ class RequestHandler(tornado.web.RequestHandler):
         return var.render(**kwargs)
 
 
-class APIHandler(tornado.web.RequestHandler):
+class APIHandler(WaterspoutHandler):
     """
     Handler class for writing JSON API
     """
-    def set_default_headers(self):
-        self._headers["Server"] = waterspout.server_name
-
     def write(self, chunk, callback=None):
         """
         Writes the given chunk to the output buffer.
