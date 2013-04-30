@@ -1,10 +1,30 @@
 import os
+import sys
 import pkgutil
-from tornado.util import ObjectDict
+
+
+class ObjectDict(dict):
+    """
+    Makes a dictionary behave like an object, with attribute-style access ::
+
+        foo = ObjectDict()
+        foo['bar'] = 42
+        assert foo.bar == 42
+
+    """
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        self[name] = value
 
 
 def get_root_path(import_name):
-    """Returns the path to a package or cwd if that cannot be found.  This
+    """
+    Returns the path to a package or cwd if that cannot be found.  This
     returns the path of a package or the folder that contains a module.
 
     Not to be confused with the package path returned by :func:`find_package`.
