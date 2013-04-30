@@ -19,4 +19,5 @@ waterspout.utils
 .. module:: waterspout.utils
 .. autofunction:: get_root_path
 .. autoclass:: ObjectDict
+.. autoclass:: cached_property
 

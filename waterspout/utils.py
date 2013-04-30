@@ -22,3 +22,36 @@ def get_root_path(import_name):
         filepath = sys.modules[import_name].__file__
     # filepath is import_name.py for a module, or __init__.py for a package.
     return os.path.dirname(os.path.abspath(filepath))
+
+
+class cached_property(object):
+    """A decorator that converts a function into a lazy property.  The
+    function wrapped is called the first time to retrieve the result
+    and then that calculated result is used the next time you access
+    the value::
+
+        class Foo(object):
+
+            @cached_property
+            def foo(self):
+                # calculate something important here
+                return 42
+
+    The class has to have a `__dict__` in order for this property to
+    work.
+    """
+
+    def __init__(self, func):
+        self.__name__ = func.__name__
+        self.__module__ = func.__module__
+        self.__doc__ = func.__doc__
+        self.func = func
+
+    def __get__(self, obj):
+        if obj is None:
+            return self
+        value = obj.__dict__.get(self.__name__, None)
+        if value is None:
+            value = self.func(obj)
+            obj.__dict__[self.__name__] = value
+        return value

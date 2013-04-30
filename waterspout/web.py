@@ -2,6 +2,7 @@ __all__ = ['RequestHandler']
 
 import waterspout
 import tornado.web
+from waterspout.utils import cached_property
 
 
 class RequestHandler(tornado.web.RequestHandler):
@@ -20,6 +21,31 @@ class RequestHandler(tornado.web.RequestHandler):
           arguments passing to the template
         """
         self.write(self.render_string(template_name=template_name, **kwargs))
+
+    @property
+    def session(self):
+        """
+        The session object works pretty much like an ordinary dict ::
+
+            class SessionHandler(RequestHandler):
+                def get(self):
+                    session = self.session
+                    self.write(session['name'])
+
+                def post(self):
+                    self.session['name'] = 'whtsky'
+
+        .. attention ::
+          Session requires ``cookie_secret`` setting.
+        """
+        class Session(object):
+            def __getattr__(s, name):
+                return self.get_secure_cookie(name)
+
+            def __setattr__(s, name, value):
+                return self.set_secure_cookie(name, value)
+
+        return Session()
 
     @property
     def template_namespace(self):
