@@ -13,6 +13,8 @@ waterspout.web
 .. module:: waterspout.web
 .. autoclass:: RequestHandler
   :members:
+.. autoclass:: APIHandler
+  :members:
 
 waterspout.utils
 ------------------
