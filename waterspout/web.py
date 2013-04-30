@@ -2,7 +2,6 @@ __all__ = ['RequestHandler']
 
 import waterspout
 import tornado.web
-from waterspout.utils import cached_property
 
 
 class RequestHandler(tornado.web.RequestHandler):
@@ -46,6 +45,13 @@ class RequestHandler(tornado.web.RequestHandler):
                 return self.set_secure_cookie(name, value)
 
         return Session()
+
+    @property
+    def globals(self):
+        """
+        An alias for Environment.globals in Jinja2.
+        """
+        return self.application.env.globals
 
     @property
     def template_namespace(self):

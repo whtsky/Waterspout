@@ -7,9 +7,12 @@ import tornado.web
 import tornado.options
 from tornado.options import define, options
 
-define('address', default='127.0.0.1', help='listen on the given address', type=str)
-define('port', default=8888, help='run on the given port', type=int)
-define('settings', default='', help='path to the settings file', type=str)
+define('address', default='127.0.0.1', help='listen on the given address',
+       type=str)
+define('port', default=8888, help='run on the given port',
+       type=int)
+define('settings', default='', help='path to the settings file',
+       type=str)
 
 from jinja2 import Environment, FileSystemLoader
 from .utils import get_root_path
@@ -27,7 +30,8 @@ class Application(object):
         else:
             caller = inspect.stack()[1]
             caller_module = inspect.getmodule(caller[0])
-            self.root_path = os.path.dirname(os.path.abspath(caller_module.__file__))
+            caller_path = os.path.abspath(caller_module.__file__)
+            self.root_path = os.path.dirname(caller_path)
 
         self.handlers = handlers
 
@@ -147,13 +151,15 @@ class Application(object):
         http_server = HTTPServer(application)
         http_server.listen(options.port, options.address)
         import logging
-        logging.info("Start serving at %s:%s" % (options.address, options.port))
+        logging.info("Start serving at %s:%s" % (options.address,
+                                                 options.port))
         tornado.ioloop.IOLoop.instance().start()
 
 
 class App(object):
     """
-    The App in Waterspout is just like the App in Django. A Waterspout Application consists of plenty of Apps.
+    The App in Waterspout is just like the App in Django.
+    A Waterspout Application consists of plenty of Apps.
 
     The minimal App ::
 
@@ -178,7 +184,8 @@ class App(object):
         else:
             caller = inspect.stack()[1]
             caller_module = inspect.getmodule(caller[0])
-            self.root_path = os.path.dirname(os.path.abspath(caller_module.__file__))
+            caller_path = os.path.abspath(caller_module.__file__)
+            self.root_path = os.path.dirname(caller_path)
         self.template_path = os.path.join(self.root_path, "templates")
         if handlers is None:
             handlers = []
