@@ -13,6 +13,8 @@ define('port', default=8888, help='run on the given port',
        type=int)
 define('settings', default='', help='path to the settings file',
        type=str)
+define('sentry_dsn', default='', help='your sentry dsn',
+       type=str)
 
 from jinja2 import Environment, FileSystemLoader
 from .utils import get_root_path
@@ -134,6 +136,19 @@ class Application(object):
             autoescape=autoescape,
             loader=FileSystemLoader(self.template_paths)
         )
+        sentry_dsn = options.sentry_dsn
+        if sentry_dsn:
+            try:
+                from raven.contrib.tornado import AsyncSentryClient
+                assert AsyncSentryClient
+            except ImportError:
+                import logging
+                logging.warning("Sentry support requires raven."
+                                "Run: pip install raven")
+                application.sentry_client = None
+            else:
+                application.sentry_client = AsyncSentryClient(sentry_dsn)
+
         env.filters = self.filters
         application.env = env
         return application

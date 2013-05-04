@@ -14,4 +14,5 @@ Contents:
 
    installation
    quickstart
+   sentry
    api
