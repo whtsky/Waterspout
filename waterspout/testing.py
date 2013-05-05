@@ -10,10 +10,17 @@ from tornado.util import raise_exc_info
 
 class TestClient(object):
     """
+    A test client for writing test for **Tornado Application**
 
+    Usage ::
+
+        client = TestClient(application)
+
+        assert client.get('/').body == 'Hello World'
+        assert client.post('/').body == '0 o'
     """
     def __init__(self, application):
-        self.application = application.application
+        self.application = application
 
         self.__stopped = False
         self.__running = False

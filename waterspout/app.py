@@ -163,7 +163,7 @@ class Application(object):
             assert client.get('/').body == 'Hello World'
         """
         from waterspout.testing import TestClient
-        return TestClient(self)
+        return TestClient(self.application)
 
     def run(self):
         """
@@ -283,4 +283,4 @@ class App(object):
             "You need to register app before testing"
 
         from waterspout.testing import TestClient
-        return TestClient(self.application)
+        return TestClient(application.application)
