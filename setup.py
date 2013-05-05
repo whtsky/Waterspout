@@ -20,6 +20,7 @@ setup(
     packages=find_packages(),
     description='Waterspout',
     long_description=waterspout.__doc__,
+    install_requires=open("requirements.txt").readlines(),
     include_package_data=True,
     license='MIT License',
     classifiers=[
