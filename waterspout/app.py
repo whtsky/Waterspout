@@ -153,6 +153,18 @@ class Application(object):
         application.env = env
         return application
 
+    def TestClient(self):
+        """
+        Return the TestClient for the current application.
+
+        Use it like ::
+
+            client = application.TestClient()
+            assert client.get('/').body == 'Hello World'
+        """
+        from waterspout.testing import TestClient
+        return TestClient(self)
+
     def run(self):
         """
         Run your Waterspout application.
@@ -256,3 +268,19 @@ class App(object):
 
     def __repr__(self):
         return '<App %s>' % self.name
+
+    def TestClient(self):
+        """
+        Return the TestClient for the current application.
+
+        Use it like ::
+
+            client = app.TestClient()
+            assert client.get('/').body == 'Hello World'
+        """
+        application = self.application
+        assert application is not None, \
+            "You need to register app before testing"
+
+        from waterspout.testing import TestClient
+        return TestClient(self.application)
