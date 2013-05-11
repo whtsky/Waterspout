@@ -2,6 +2,8 @@ import os
 import sys
 import pkgutil
 
+from tornado.escape import to_unicode
+
 
 class ObjectDict(dict):
     """

@@ -6,7 +6,8 @@ from tornado.httpserver import HTTPServer
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.testing import bind_unused_port
 from tornado.util import raise_exc_info
-from tornado.escape import to_unicode
+
+from waterspout.utils import to_unicode
 
 
 class TestClient(object):
@@ -66,7 +67,9 @@ class TestClient(object):
                               headers=headers, body=body, **kwargs)
         self.http_client.fetch(request, self.stop)
         response = self.wait()
-        response.__dict__["body"] = to_unicode(response.body)
+
+        response._body = to_unicode(response._get_body())
+
         return response
 
     def options(self, url, headers=None, body=None, **kwargs):

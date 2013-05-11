@@ -7,7 +7,14 @@ class HelloWorldHandler(RequestHandler):
         self.write('Hello World')
 
 
-application = Application(handlers=[('/', HelloWorldHandler)])
+application = Application(__name__, handlers=[('/', HelloWorldHandler)])
+
+
+def test_test():
+    client = application.TestClient()
+    from waterspout.utils import to_unicode
+    body = client.get('/').body
+    assert body == to_unicode(body)
 
 
 def test_route():
