@@ -6,6 +6,7 @@ from tornado.httpserver import HTTPServer
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.testing import bind_unused_port
 from tornado.util import raise_exc_info
+from tornado.escape import to_unicode
 
 
 class TestClient(object):
@@ -49,12 +50,24 @@ class TestClient(object):
 
     def request(self, url, method='GET',
                 headers=None, body=None, **kwargs):
+        """
+        Start a request to the application and return the response.
+
+        .. attention: Response.body is converted to unicode.
+
+        :param string url: URL to fetch, e.g. "/"
+        :param string method: HTTP method, e.g. "GET" or "POST"
+        :param headers: Additional HTTP headers to pass on the request
+        :param body: HTTP body to pass on the request
+        """
         if '//' not in url:
             url = self.get_url(url)
         request = HTTPRequest(url=url, method=method,
                               headers=headers, body=body, **kwargs)
         self.http_client.fetch(request, self.stop)
-        return self.wait()
+        response = self.wait()
+        response.__dict__["body"] = to_unicode(response.body)
+        return response
 
     def options(self, url, headers=None, body=None, **kwargs):
         return self.request(url, method='OPTIONS', headers=headers,

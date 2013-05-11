@@ -16,6 +16,11 @@ waterspout.web
 .. autoclass:: APIHandler
   :members:
 
+waterspout.testing
+-------------------
+.. module:: waterspout.testing
+.. autoclass:: TestClient
+
 waterspout.utils
 ------------------
 .. module:: waterspout.utils

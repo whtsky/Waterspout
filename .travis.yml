@@ -11,3 +11,8 @@ install:
 
 script:
   - "python setup.py test"
+
+after_success:
+    - pip install coveralls
+    - coverage run --source=waterspout setup.py -q nosetests
+    - coveralls
