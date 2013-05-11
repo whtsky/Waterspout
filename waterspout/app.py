@@ -44,7 +44,9 @@ class Application(object):
         if not (template_path and isinstance(template_path, str)):
             self.template_paths = [os.path.join(self.root_path, "templates")]
         else:
-            self.template_paths = [template_path]
+            if not os.path.isabs(template_path):
+                template_path = os.path.join(self.root_path, template_path)
+            self.template_paths = [os.path.abspath(template_path)]
 
         self.filters = {}
 

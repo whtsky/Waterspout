@@ -23,6 +23,9 @@ class ObjectDict(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
+    def __delattr__(self, name):
+        del self[name]
+
 
 def get_root_path(import_name):
     """
@@ -69,7 +72,7 @@ class cached_property(object):
         self.__doc__ = func.__doc__
         self.func = func
 
-    def __get__(self, obj):
+    def __get__(self, obj, type=None):
         if obj is None:
             return self
         value = obj.__dict__.get(self.__name__, None)
