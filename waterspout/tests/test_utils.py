@@ -23,6 +23,7 @@ def test_get_root_path():
     root = os.path.abspath(os.path.dirname(path))
     from waterspout.utils import get_root_path
     assert root == get_root_path(__name__)
+    assert os.getcwd() == get_root_path('__main__')
 
 
 def test_cached_property():

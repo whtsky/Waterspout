@@ -43,6 +43,8 @@ class Application(object):
         if "static_handler_class" not in settings:
             from .web import StaticFileHandler
             settings["static_handler_class"] = StaticFileHandler
+        if "xsrf_cookies" not in settings:
+            settings["xsrf_cookies"] = True
         template_path = settings.get("template_path", None)
         if not (template_path and isinstance(template_path, str)):
             self.template_paths = [os.path.join(self.root_path, "templates")]
