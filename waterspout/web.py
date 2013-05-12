@@ -57,11 +57,17 @@ class RequestHandler(WaterspoutHandler):
         """
         if not hasattr(self, '_session'):
             class Session(object):
-                def __getattr__(s, name):
+                def __getitem__(_, name):
                     return self.get_secure_cookie(name)
 
-                def __setattr__(s, name, value):
-                    return self.set_secure_cookie(name, value)
+                def __getattr__(self, name):
+                    return self[name]
+
+                def __setitem__(_, key, value):
+                    self.set_secure_cookie(key, value)
+
+                def __setattr__(self, name, value):
+                    self[name] = value
             self._session = Session()
 
         return self._session
@@ -138,7 +144,7 @@ class APIHandler(WaterspoutHandler):
             if callback is None:
                 callback = self.get_argument('callback', None)
             if callback:
-                chunk = "%s(%s)" % (callback, tornado.escape.to_unicode(chunk))
+                chunk = "%s(%s);" % (callback, tornado.escape.to_unicode(chunk))
                 self.set_header("Content-Type",
                                 "application/javascript; charset=UTF-8")
             else:

@@ -19,22 +19,36 @@ class PostHandler(RequestHandler):
 
 class APIHandler(APIHandler):
     def post(self):
-        self.write('success')
+        self.write({'name': 'whtsky'})
 
+
+class SessionHandler(RequestHandler):
+    def get(self):
+        self.session["name"] = "whtsky"
+        self.session.miao = "wang"
+
+        assert not self.session.a
+        assert not self.session["b"]
 
 handlers = [
     ('/', HelloWorldHandler),
     ('/post', PostHandler),
-    ('/api', APIHandler)
+    ('/api', APIHandler),
+    ('/session', SessionHandler)
 ]
 
-application = Application(__name__, handlers=handlers)
+application = Application(__name__, handlers=handlers, cookie_secret="..")
 
 
 def test_test():
     client = application.TestClient()
     body = client.get('/').body
     assert body == to_unicode(body)
+
+
+def test_session():
+    client = application.TestClient()
+    assert client.get('/session').code == 200
 
 
 def test_route():
@@ -55,3 +69,10 @@ def test_csrf():
     client = application.TestClient()
     assert client.post('/post', body='..').code == 403
     assert client.post('/api', body='..').code == 200
+
+
+def test_api():
+    client = application.TestClient()
+    assert client.post('/api', body='..').body == '{"name": "whtsky"}'
+    assert client.post('/api?callback=note', body='..').body == \
+           'note({"name": "whtsky"});'
