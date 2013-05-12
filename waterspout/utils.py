@@ -1,8 +1,33 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import pkgutil
 
+try:  # Py3k
+    from urllib.parse import quote
+    assert quote
+except ImportError:  # Py2
+    from urllib import quote
+
 from tornado.escape import to_unicode
+
+
+UNQUOTE = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' \
+          '0123456789' \
+          '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+
+
+def smart_quote(url):
+    """
+    Like urllib.parse.quote, but quote non-ascii words only.
+
+    Example ::
+        smart_quote("http://whouz.com")  # http://whouz.com
+        smart_quote("喵.com")  # %E5%96%B5.com
+    """
+    l = [s if s in UNQUOTE else quote(s) for s in url]
+    return ''.join(l)
 
 
 class ObjectDict(dict):

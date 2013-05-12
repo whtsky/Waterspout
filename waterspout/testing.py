@@ -7,7 +7,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from tornado.testing import bind_unused_port
 from tornado.util import raise_exc_info
 
-from waterspout.utils import to_unicode
+from waterspout.utils import to_unicode, smart_quote
 
 
 class TestClient(object):
@@ -63,7 +63,7 @@ class TestClient(object):
         """
         if '//' not in url:
             url = self.get_url(url)
-        request = HTTPRequest(url=url, method=method,
+        request = HTTPRequest(url=smart_quote(url), method=method,
                               headers=headers, body=body, **kwargs)
         self.http_client.fetch(request, self.stop)
         response = self.wait()
@@ -121,7 +121,8 @@ class TestClient(object):
 
     def close(self):
         """CLose http_server, io_loop by sequence, to ensure the environment
-        is cleaned up and invoking `setup` successfully within next test function
+        is cleaned up and invoking `setup` successfully within next test
+         function
 
         It is suggested to be called in `TestCase.tearDown`
         """
@@ -139,11 +140,11 @@ class TestClient(object):
             self.io_loop.close(all_fds=True)
 
     def stop(self, _arg=None, **kwargs):
-        """Stops the `.IOLoop`, causing one pending (or future) call to `wait()`
-        to return.
+        """Stops the `.IOLoop`, causing one pending (or future) call to
+         `wait()` to return.
 
-        Keyword arguments or a single positional argument passed to `stop()` are
-        saved and will be returned by `wait()`.
+        Keyword arguments or a single positional argument passed to
+         `stop()` are saved and will be returned by `wait()`.
         """
         assert _arg is None or not kwargs
         self.__stop_args = kwargs or _arg
@@ -172,7 +173,9 @@ class TestClient(object):
                     self.stop()
                 if self.__timeout is not None:
                     self.io_loop.remove_timeout(self.__timeout)
-                self.__timeout = self.io_loop.add_timeout(time.time() + timeout, timeout_func)
+                timeout = self.io_loop.add_timeout(time.time() + timeout,
+                                                   timeout_func)
+                self.__timeout = timeout
             while True:
                 self.__running = True
                 self.io_loop.start()

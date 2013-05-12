@@ -24,6 +24,7 @@ waterspout.testing
 waterspout.utils
 ------------------
 .. module:: waterspout.utils
+.. autofunction:: smart_quote
 .. autofunction:: get_root_path
 .. autoclass:: ObjectDict
 .. autoclass:: cached_property

@@ -1,5 +1,3 @@
-__all__ = ['RequestHandler', 'APIHandler']
-
 import waterspout
 import tornado.web
 import tornado.escape
@@ -18,7 +16,9 @@ class WaterspoutHandler(tornado.web.RequestHandler):
         """
         Returns the sentry client configured in the application.
         """
-        return self.application.sentry_client
+        if hasattr(self.application, "sentry_client"):
+            return self.application.sentry_client
+        return None
 
     def get_sentry_data_from_request(self):
         """
@@ -225,3 +225,7 @@ class APIHandler(WaterspoutHandler):
                 self.set_header("Content-Type",
                                 "application/json; charset=UTF-8")
         super(APIHandler, self).write(chunk)
+
+
+class StaticFileHandler(tornado.web.StaticFileHandler, WaterspoutHandler):
+    pass

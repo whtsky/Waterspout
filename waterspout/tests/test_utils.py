@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 def test_object_dict():
     from waterspout.utils import ObjectDict
     obj = ObjectDict()
@@ -39,3 +42,9 @@ def test_cached_property():
     num = Num()
     assert num.m != num.m
     assert num.n == num.n
+
+
+def test_smart_quote():
+    from waterspout.utils import smart_quote
+    assert smart_quote("http://whouz.com") == "http://whouz.com"
+    assert smart_quote("喵.com") == '%E5%96%B5.com'

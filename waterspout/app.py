@@ -40,6 +40,9 @@ class Application(object):
         if "static_path" not in settings:
             settings["static_path"] = os.path.join(self.root_path, "static")
         self.settings = settings
+        if "static_handler_class" not in settings:
+            from .web import StaticFileHandler
+            settings["static_handler_class"] = StaticFileHandler
         template_path = settings.get("template_path", None)
         if not (template_path and isinstance(template_path, str)):
             self.template_paths = [os.path.join(self.root_path, "templates")]
