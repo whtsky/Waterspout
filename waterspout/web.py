@@ -3,7 +3,14 @@ import tornado.web
 import tornado.escape
 
 
-class WaterspoutHandler(tornado.web.RequestHandler):
+try:
+    from raven.contrib.tornado import SentryMixin
+    assert SentryMixin
+except ImportError:
+    SentryMixin = object
+
+
+class WaterspoutHandler(tornado.web.RequestHandler, SentryMixin):
     """
     The most basic RequestHandler for Waterspout.
     Sentry support inside.
@@ -11,97 +18,10 @@ class WaterspoutHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         self._headers["Server"] = waterspout.server_name
 
-    @property
-    def sentry_client(self):
-        """
-        Returns the sentry client configured in the application.
-        """
-        if hasattr(self.application, "sentry_client"):
-            return self.application.sentry_client
-        return None
-
-    def get_sentry_data_from_request(self):
-        """
-        Extracts the data required for 'sentry.interfaces.Http' from the
-        current request being handled by the request handler
-
-        :param return: A dictionary.
-        """
-        return {
-            'sentry.interfaces.Http': {
-                'url': self.request.full_url(),
-                'method': self.request.method,
-                'data': self.request.arguments,
-                'query_string': self.request.query,
-                'cookies': self.request.headers.get('Cookie', None),
-                'headers': dict(self.request.headers),
-            }
-        }
-
-    def get_sentry_user_info(self):
-        """
-        Data for sentry.interfaces.User
-
-        Default implementation only sends `is_authenticated` by checking if
-        `tornado.web.RequestHandler.get_current_user` tests postitively for on
-        Truth calue testing
-        """
-        return {
-            'sentry.interfaces.User': {
-                'is_authenticated': True if self.get_current_user() else False
-            }
-        }
-
-    def get_sentry_extra_info(self):
-        """
-        Subclass and implement this method if you need to send any extra
-        information
-        """
-        return {
-            'extra': {
-            }
-        }
-
-    def get_default_context(self):
-        data = {}
-
-        # Update request data
-        data.update(self.get_sentry_data_from_request())
-
-        # update user data
-        data.update(self.get_sentry_user_info())
-
-        # Update extra data
-        data.update(self.get_sentry_extra_info())
-
-        return data
-
     def _capture(self, call_name, data=None, **kwargs):
-        if data is None:
-            data = self.get_default_context()
-        else:
-            default_context = self.get_default_context()
-            if isinstance(data, dict):
-                default_context.update(data)
-            else:
-                default_context['extra']['extra_data'] = data
-            data = default_context
-
-        return getattr(self.sentry_client, call_name)(data=data, **kwargs)
-
-    def captureException(self, exc_info=None, **kwargs):
-        return self._capture('captureException', exc_info=exc_info, **kwargs)
-
-    def captureMessage(self, message, **kwargs):
-        return self._capture('captureMessage', message=message, **kwargs)
-
-    def write_error(self, status_code, **kwargs):
-        """Override implementation to report all exceptions to sentry.
-        """
-        rv = super(WaterspoutHandler, self).write_error(status_code, **kwargs)
-        if self.sentry_client:
-            self.captureException(exc_info=kwargs.get('exc_info'))
-        return rv
+        if not self.get_sentry_client():
+            return
+        super(SentryMixin, self)._capture(self, call_name, data, **kwargs)
 
 
 class RequestHandler(WaterspoutHandler):

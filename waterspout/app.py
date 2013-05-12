@@ -130,17 +130,9 @@ class Application(object):
             handlers=self.handlers,
             **self.settings
         )
-        if "autoescape" in self.settings:
-            autoescape = self.settings["autoescape"]
-        else:
-            def guess_autoescape(template_name):
-                if template_name is None or '.' not in template_name:
-                    return False
-                ext = template_name.rsplit('.', 1)[1]
-                return ext in ('html', 'htm', 'xml')
-            autoescape = guess_autoescape
+        auto_escape = self.settings.get('autoescape', False)
         env = Environment(
-            autoescape=autoescape,
+            autoescape=auto_escape,
             loader=FileSystemLoader(self.template_paths)
         )
         sentry_dsn = options.sentry_dsn
