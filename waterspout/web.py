@@ -111,6 +111,59 @@ class RequestHandler(WaterspoutHandler):
         var = env.get_template(template_name)
         return var.render(**kwargs)
 
+    def flash(self, message, category='message'):
+        """Flashes a message to the next request.  In order to remove the
+        flashed message from the session and to display it to the user,
+        the template has to call :func:`get_flashed_messages`.
+
+        :param message: the message to be flashed.
+        :param category: the category for the message.  The following values
+                         are recommended:
+                         ``'message'`` for any kind of message,
+                         ``'error'`` for errors,
+                         ``'info'`` for information messages and
+                         ``'warning'`` for warnings.
+                         However any kind of string can be used as category.
+        """
+        session = self.session
+        flashes = session.get('_flashes', [])
+        flashes.append((category, message))
+        session['_flashes'] = flashes
+
+    def get_flashed_messages(self, with_categories=False, category_filter=[]):
+        """Pulls all flashed messages from the session and returns them.
+        Further calls in the same request to the function will return
+        the same messages.  By default just the messages are returned,
+        but when `with_categories` is set to `True`, the return value will
+        be a list of tuples in the form ``(category, message)`` instead.
+
+        Filter the flashed messages to one or more categories by providing
+        those categories in `category_filter`.
+        This allows rendering categories in separate html blocks.
+        The `with_categories` and `category_filter` arguments are distinct:
+
+        * `with_categories` controls whether categories are returned with
+          message text
+          (`True` gives a tuple, where `False` gives just the message text).
+        * `category_filter` filters the messages down to only those matching
+          the provided categories.
+
+
+        :param with_categories: set to `True` to also receive categories.
+        :param category_filter: whitelist of categories to limit return values
+        """
+        session = self.session
+        flashes = session.get('_flashes', [])
+        if category_filter:
+            remained = filter(lambda f: f[0] not in category_filter, flashes)
+            session['_flashes'] = remained
+            flashes = filter(lambda f: f[0] in category_filter, flashes)
+        else:
+            session['_flashes'] = []
+        if not with_categories:
+            return [x[1] for x in flashes]
+        return flashes
+
 
 class APIHandler(WaterspoutHandler):
     """
@@ -144,7 +197,8 @@ class APIHandler(WaterspoutHandler):
             if callback is None:
                 callback = self.get_argument('callback', None)
             if callback:
-                chunk = "%s(%s);" % (callback, tornado.escape.to_unicode(chunk))
+                chunk = "%s(%s);" % (callback,
+                                     tornado.escape.to_unicode(chunk))
                 self.set_header("Content-Type",
                                 "application/javascript; charset=UTF-8")
             else:

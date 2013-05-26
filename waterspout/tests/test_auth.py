@@ -34,7 +34,8 @@ handlers = [
     ('/b', AdminRequireHandler)
 ]
 
-waterspout = Waterspout(__name__, handlers=handlers, cookie_secret="..", login_url="/")
+waterspout = Waterspout(__name__, handlers=handlers,
+                        cookie_secret="..", login_url="/")
 
 
 @waterspout.user_loader

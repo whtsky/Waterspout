@@ -32,11 +32,24 @@ class SessionHandler(RequestHandler):
 
         assert self.session.miao
 
+
+class MessageFlashingHandler(RequestHandler):
+    def get(self):
+        assert not self.get_flashed_messages()
+        self.flash("aa")
+        assert self.get_flashed_messages() == ["aa"]
+        self.flash("aa", category="message")
+        self.flash("bb", category="bb")
+        assert self.get_flashed_messages(category_filter=["bb"]) == ["bb"]
+        assert self.get_flashed_messages(True) == [('message', 'aa')]
+
+
 handlers = [
     ('/', HelloWorldHandler),
     ('/post', PostHandler),
     ('/api', APIHandler),
-    ('/session', SessionHandler)
+    ('/session', SessionHandler),
+    ('/message', MessageFlashingHandler)
 ]
 
 waterspout = Waterspout(__name__, handlers=handlers, cookie_secret="..")
@@ -78,3 +91,8 @@ def test_api():
     assert client.post('/api', body='..').body == '{"name": "whtsky"}'
     assert client.post('/api?callback=note', body='..').body == \
            'note({"name": "whtsky"});'
+
+
+def test_message_flashing():
+    client = waterspout.TestClient()
+    assert client.get('/message').code == 200

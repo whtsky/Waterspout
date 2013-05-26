@@ -3,7 +3,7 @@ API
 waterspout.app
 ------------------
 .. module:: waterspout.app
-.. autoclass:: Application
+.. autoclass:: Waterspout
   :members:
 .. autoclass:: App
   :members:
