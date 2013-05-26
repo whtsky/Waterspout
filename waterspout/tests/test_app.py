@@ -1,4 +1,4 @@
-from waterspout.app import Application, App
+from waterspout.app import Waterspout, App
 from waterspout.web import RequestHandler
 
 
@@ -14,9 +14,9 @@ def test_register_app():
 
     app = App('app name', __name__, handlers)
 
-    assert app.application is None
+    assert app.parent is None
 
-    application = Application()
-    application.register_app(app)
+    waterspout = Waterspout()
+    waterspout.register_app(app)
 
-    assert app.application is application
+    assert app.parent is waterspout

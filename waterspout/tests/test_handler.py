@@ -2,7 +2,7 @@
 
 from waterspout import server_name
 
-from waterspout.app import Application
+from waterspout.app import Waterspout
 from waterspout.web import RequestHandler, APIHandler
 from waterspout.utils import to_unicode
 
@@ -30,6 +30,8 @@ class SessionHandler(RequestHandler):
         assert not self.session.a
         assert not self.session["b"]
 
+        assert self.session.miao
+
 handlers = [
     ('/', HelloWorldHandler),
     ('/post', PostHandler),
@@ -37,27 +39,27 @@ handlers = [
     ('/session', SessionHandler)
 ]
 
-application = Application(__name__, handlers=handlers, cookie_secret="..")
+waterspout = Waterspout(__name__, handlers=handlers, cookie_secret="..")
 
 
 def test_test():
-    client = application.TestClient()
+    client = waterspout.TestClient()
     body = client.get('/').body
     assert body == to_unicode(body)
 
 
 def test_session():
-    client = application.TestClient()
+    client = waterspout.TestClient()
     assert client.get('/session').code == 200
 
 
 def test_route():
-    client = application.TestClient()
+    client = waterspout.TestClient()
     assert client.get('/').body == 'Hello World'
 
 
 def test_static():
-    client = application.TestClient()
+    client = waterspout.TestClient()
     assert client.get('/robots.txt').headers["Server"] == server_name
     assert client.get('/static/>_<').code == 404
     response = client.get('/static/喵.txt')
@@ -66,13 +68,13 @@ def test_static():
 
 
 def test_csrf():
-    client = application.TestClient()
+    client = waterspout.TestClient()
     assert client.post('/post', body='..').code == 403
     assert client.post('/api', body='..').code == 200
 
 
 def test_api():
-    client = application.TestClient()
+    client = waterspout.TestClient()
     assert client.post('/api', body='..').body == '{"name": "whtsky"}'
     assert client.post('/api?callback=note', body='..').body == \
            'note({"name": "whtsky"});'

@@ -2,6 +2,7 @@ import waterspout
 import tornado.web
 import tornado.escape
 
+from waterspout.utils import Session
 
 try:
     from raven.contrib.tornado import SentryMixin
@@ -23,22 +24,6 @@ class WaterspoutHandler(tornado.web.RequestHandler, SentryMixin):
             return
         super(SentryMixin, self)._capture(self, call_name, data, **kwargs)
 
-
-class RequestHandler(WaterspoutHandler):
-    """
-    Base RequestHandler for Waterspout Application
-    """
-    def render(self, template_name, **kwargs):
-        """
-        Renders the template with the given arguments as the response.
-
-        :param template_name:
-          name of template file
-        :param kwargs:
-          arguments passing to the template
-        """
-        self.write(self.render_string(template_name=template_name, **kwargs))
-
     @property
     def session(self):
         """
@@ -56,21 +41,36 @@ class RequestHandler(WaterspoutHandler):
           Session requires ``cookie_secret`` setting.
         """
         if not hasattr(self, '_session'):
-            class Session(object):
-                def __getitem__(_, name):
-                    return self.get_secure_cookie(name)
-
-                def __getattr__(self, name):
-                    return self[name]
-
-                def __setitem__(_, key, value):
-                    self.set_secure_cookie(key, value)
-
-                def __setattr__(self, name, value):
-                    self[name] = value
-            self._session = Session()
+            self._session = Session(self)
 
         return self._session
+
+    def finish(self, chunk=None):
+        """Finishes this response, ending the HTTP request."""
+        if hasattr(self, '_session'):
+            self.session.save()
+        super(WaterspoutHandler, self).finish(chunk)
+
+
+class RequestHandler(WaterspoutHandler):
+    """
+    Base RequestHandler for Waterspout Application
+    """
+    def render(self, template_name, **kwargs):
+        """
+        Renders the template with the given arguments as the response.
+
+        :param template_name:
+          name of template file
+        :param kwargs:
+          arguments passing to the template
+        """
+        self.write(self.render_string(template_name=template_name, **kwargs))
+
+    def get_current_user(self):
+        user_loader = self.application._user_loader
+        if user_loader:
+            return self.application._user_loader(self.session)
 
     @property
     def globals(self):

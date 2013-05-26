@@ -4,18 +4,34 @@ import os
 import sys
 import pkgutil
 
+from tornado.escape import json_encode, json_decode
+
 try:  # Py3k
     from urllib.parse import quote
+    basestring = unicode = str
     assert quote
 except ImportError:  # Py2
     from urllib import quote
-
-from tornado.escape import to_unicode
 
 
 UNQUOTE = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' \
           '0123456789' \
           '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+
+
+def to_unicode(value):
+    """
+    Turn and value into unicode.
+    """
+    if isinstance(value, unicode):
+        return value
+    if isinstance(value, basestring):
+        return value.decode('utf-8')
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, bytes):
+        return value.decode('utf-8')
+    return value
 
 
 def smart_quote(url):
@@ -105,3 +121,38 @@ class cached_property(object):
             value = self.func(obj)
             obj.__dict__[self.__name__] = value
         return value
+
+
+class Session(ObjectDict):
+    """
+    The session object works pretty much like an ordinary dict ::
+
+        session = Session(handler)
+        print(session['name'])
+        session.id = 6
+
+    .. attention ::
+      Session requires ``cookie_secret`` setting.
+
+    :param handler: A Waterspout Handler
+    """
+
+    def __init__(self, handler):
+        self.__handler = handler
+
+        super(ObjectDict, self).__init__()
+
+        sessions = handler.get_secure_cookie("__waterspout_sessions__")
+        if sessions:
+            self.update(**json_decode(sessions))
+
+    def __getitem__(self, item):
+        if item in self:
+            return self.get(item)
+        return None
+
+    def save(self):
+        handler = self.__handler
+        del self.__handler
+        sessions = json_encode(self)
+        handler.set_secure_cookie("__waterspout_sessions__", sessions)

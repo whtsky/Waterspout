@@ -20,6 +20,9 @@ class TestClient(object):
 
         assert client.get('/').body == 'Hello World'
         assert client.post('/').body == '0 o'
+
+    :param application: The application to be tested.
+    :type application: A Tornado Application.
     """
     def __init__(self, application):
         self.application = application
@@ -29,6 +32,7 @@ class TestClient(object):
         self.__failure = None
         self.__stop_args = None
         self.__timeout = None
+        self._cookies = ""
 
         self.setUp()
 
@@ -63,12 +67,20 @@ class TestClient(object):
         """
         if '//' not in url:
             url = self.get_url(url)
+
+        if headers is None:
+            headers = {}
+        if "Set-Cookie" not in headers:
+            headers.update({"Set-Cookie": self._cookies})
+
         request = HTTPRequest(url=smart_quote(url), method=method,
                               headers=headers, body=body, **kwargs)
         self.http_client.fetch(request, self.stop)
         response = self.wait()
 
         response._body = to_unicode(response._get_body())
+
+        self._cookies = response.headers.get("Set-Cookie", "")
 
         return response
 

@@ -1,4 +1,4 @@
-__all__ = ['Application', 'App']
+__all__ = ['Waterspout', 'App']
 
 import os
 import inspect
@@ -20,9 +20,8 @@ from jinja2 import Environment, FileSystemLoader
 from .utils import get_root_path
 
 
-class Application(object):
+class Waterspout(object):
     """
-    The main Waterspout Application.
     """
     def __init__(self, import_name=None, handlers=None, **settings):
         if handlers is None:
@@ -53,17 +52,19 @@ class Application(object):
                 template_path = os.path.join(self.root_path, template_path)
             self.template_paths = [os.path.abspath(template_path)]
 
+        self._user_loader = None
+
         self.filters = {}
 
     def filter(self, f):
         """
-        Decorator to add a filter to Waterspout Application.
+        Decorator to add a filter to Waterspout.
 
         Add your filter like ::
 
-            application = Application()
+            waterspout = Waterspout()
 
-            @application.filter
+            @waterspout.filter
             def sort(l):
                 return l.sort()
 
@@ -90,7 +91,7 @@ class Application(object):
           to the handler's constructor.
         :param name:
           (optional) A name for this handler.  Used by
-          Application.reverse_url.
+          waterspout.reverse_url.
         """
         urlspec = [pattern, handler_class]
         if kwargs:
@@ -101,19 +102,26 @@ class Application(object):
 
     def register_app(self, app, prefix=''):
         """
-        Register an app to Application.
+        Register an app to waterspout.
 
         :param app: A Waterspout app.
         :param prefix:
           URL prefix for this app.
           Will be ``/<app_name>`` by default
         """
-        if app.application is not None:
+        if app.parent is not None:
             print("%s has been registered before." % app)
             return
         if not prefix:
             prefix = '/%s' % app.name
         self.template_paths.append(app.template_path)
+
+        if hasattr(app, "_user_loader"):
+            if self._user_loader:
+                raise RuntimeError("An user loader already registered"
+                                   "But %s app provided another." % app.name)
+            self._user_loader = app._user_loader
+
         if prefix == '/':
             self.handlers += app.handlers
         else:
@@ -122,7 +130,7 @@ class Application(object):
                 new_handler_class = [url] + list(handler_class[1:])
                 self.handlers.append(tuple(new_handler_class))
         self.filters.update(app.filters)
-        app.application = self
+        app.parent = self
 
     @property
     def application(self):
@@ -150,23 +158,40 @@ class Application(object):
 
         env.filters = self.filters
         application.env = env
+        application._user_loader = self._user_loader
+
         return application
 
     def TestClient(self):
         """
-        Return the TestClient for the current application.
+        Return the TestClient.
 
         Use it like ::
 
-            client = application.TestClient()
+            client = waterspout.TestClient()
             assert client.get('/').body == 'Hello World'
         """
         from waterspout.testing import TestClient
         return TestClient(self.application)
 
+    def user_loader(self, f):
+        """
+        Decoration to change the user loader function.
+
+        Example ::
+
+            @waterspout.user_loader
+            def load_user(session):
+                return User.get(int(session["id"]))
+
+        :param f: the user loader function
+        """
+        self._user_loader = f
+        return f
+
     def run(self):
         """
-        Run your Waterspout application.
+        Run your Waterspout Application.
         """
         from tornado.httpserver import HTTPServer
         import tornado.ioloop
@@ -216,7 +241,7 @@ class App(object):
         if handlers is None:
             handlers = []
         self.handlers = handlers
-        self.application = None
+        self.parent = None
         self.filters = {}
 
     def filter(self, f):
@@ -238,8 +263,8 @@ class App(object):
         :param f: function to add as a filter.
         """
         self.filters[f.__name__] = f
-        if self.application is not None:
-            self.application.filters.update(self.filters)
+        if self.parent is not None:
+            self.parent.filters.update(self.filters)
         return f
 
     def add_handler(self, pattern, handler_class, kwargs=None, name=None):
@@ -256,7 +281,7 @@ class App(object):
           to the handler's constructor.
         :param name:
           (optional) A name for this handler.  Used by
-          Application.reverse_url.
+          Waterspout.reverse_url.
         """
         urlspec = [pattern, handler_class]
         if kwargs:
@@ -270,16 +295,31 @@ class App(object):
 
     def TestClient(self):
         """
-        Return the TestClient for the current application.
+        Return the TestClient for the current Waterspout.
 
         Use it like ::
 
             client = app.TestClient()
             assert client.get('/').body == 'Hello World'
         """
-        application = self.application
-        assert application is not None, \
+        Waterspout = self.parent
+        assert Waterspout is not None, \
             "You need to register app before testing"
 
         from waterspout.testing import TestClient
-        return TestClient(application.application)
+        return TestClient(Waterspout.Waterspout)
+
+    def user_loader(self, f):
+        """
+        Decoration to change the user loader function.
+
+        Example ::
+
+            @app.user_loader
+            def load_user(session):
+                return User.get(int(session["id"]))
+
+        :param f: the user loader function
+        """
+        self._user_loader = f
+        return f
