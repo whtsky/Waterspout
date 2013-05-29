@@ -17,6 +17,8 @@ define('sentry_dsn', default='', help='your sentry dsn',
        type=str)
 
 from jinja2 import Environment, FileSystemLoader
+
+from .config import Config
 from .utils import get_root_path
 
 
@@ -38,7 +40,6 @@ class Waterspout(object):
 
         if "static_path" not in settings:
             settings["static_path"] = os.path.join(self.root_path, "static")
-        self.settings = settings
         if "static_handler_class" not in settings:
             from .web import StaticFileHandler
             settings["static_handler_class"] = StaticFileHandler
@@ -51,6 +52,8 @@ class Waterspout(object):
             if not os.path.isabs(template_path):
                 template_path = os.path.join(self.root_path, template_path)
             self.template_paths = [os.path.abspath(template_path)]
+
+        self.settings = Config(self.root_path, settings)
 
         self._user_loader = None
 
