@@ -46,5 +46,3 @@ def load_user(session):
 def test_auth():
     client = waterspout.TestClient()
     assert client.get('/a').effective_url.endswith("?next=%2Fa")
-    print client.get('/b')
-    print client.get('/')

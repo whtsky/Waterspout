@@ -1,3 +1,17 @@
+"""
+
+Modified from flask.config by whtsky
+
+    flask.config
+    ~~~~~~~~~~~~
+
+    Implements the configuration related objects.
+
+    :copyright: (c) 2011 by Armin Ronacher.
+    :license: BSD, see LICENSE for more details.
+"""
+
+
 import os
 import imp
 import errno
@@ -20,9 +34,15 @@ class Config(ObjectDict):
     use the same module and with that provide the configuration values
     just before the call::
 
-        debug = True
-        cookie_secret = 'development key'
+        DEBUG = True
+        COOKIE_SECRET = 'development key'
         config.from_object(__name__)
+
+    In both cases (loading from any Python file or loading from modules),
+    only uppercase keys are added to the config.  This makes it possible to use
+    lowercase values in the config file for temporary values that are not added
+    to the config or to define the config keys in the same file that implements
+    the application.
 
     Probably the most interesting way to load configurations is from an
     environment variable pointing to a file::
@@ -41,8 +61,14 @@ class Config(ObjectDict):
     :param defaults: an optional dictionary of default values
     """
 
-    def __init__(self, root_path, defaults=None):
+    def __init__(self, root_path=None, defaults=None):
         dict.__init__(self, defaults or {})
+        if not root_path:
+            import inspect
+            caller = inspect.stack()[1]
+            caller_module = inspect.getmodule(caller[0])
+            caller_path = os.path.abspath(caller_module.__file__)
+            root_path = os.path.dirname(caller_path)
         self.root_path = root_path
 
     def from_envvar(self, variable_name, silent=False):
@@ -101,6 +127,7 @@ class Config(ObjectDict):
 
         Objects are usually either modules or classes.
 
+        Just the uppercase variables in that object are stored in the config.
         Example usage::
 
             config.from_object('default_config')
@@ -117,7 +144,8 @@ class Config(ObjectDict):
         if isinstance(obj, basestring):
             obj = import_string(obj)
         for key in dir(obj):
-            self[key] = getattr(obj, key)
+            if key.isupper():
+                self[key.lower()] = getattr(obj, key)
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict.__repr__(self))
