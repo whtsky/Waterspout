@@ -97,7 +97,7 @@ class Waterspout(object):
             urlspec.append(name)
         self.handlers.append(urlspec)
 
-    def register_app(self, app, prefix=''):
+    def register_app(self, app, prefix='', domain=''):
         """
         Register an app to waterspout.
 
@@ -105,6 +105,8 @@ class Waterspout(object):
         :param prefix:
           URL prefix for this app.
           Will be ``/<app_name>`` by default
+        :param domain:
+          Domain for this app.
         """
         if app.parent is not None:
             print("%s has been registered before." % app)
@@ -120,12 +122,18 @@ class Waterspout(object):
             self._user_loader = app._user_loader
 
         if prefix == '/':
-            self.handlers += app.handlers
+            handlers = app.handlers
         else:
+            handlers = []
             for handler_class in app.handlers:
                 url = '%s%s' % (prefix, handler_class[0])
                 new_handler_class = [url] + list(handler_class[1:])
-                self.handlers.append(tuple(new_handler_class))
+                handlers.append(tuple(new_handler_class))
+        if domain:
+            domain = "^{}$".format(domain.strip("^$"))
+            self.handlers += [domain, handlers]
+        else:
+            self.handlers += handlers
         self.filters.update(app.filters)
         app.parent = self
 

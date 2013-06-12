@@ -20,3 +20,13 @@ def test_register_app():
     waterspout.register_app(app)
 
     assert app.parent is waterspout
+
+
+def test_domain():
+
+    app = App('test', __name__, handlers=[])
+
+    waterspout = Waterspout()
+    waterspout.register_app(app, domain='miao.com')
+
+    assert waterspout.handlers == ['^miao.com$', []]

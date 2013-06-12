@@ -16,6 +16,10 @@ class WaterspoutHandler(tornado.web.RequestHandler, SentryMixin):
     The most basic RequestHandler for Waterspout.
     Sentry support inside.
     """
+    def __init__(self, *args, **kwargs):
+        super(WaterspoutHandler, self).__init__(*args, **kwargs)
+        self.subdomain = self.request.host.split(".")[0]
+
     def set_default_headers(self):
         self._headers["Server"] = waterspout.server_name
 
