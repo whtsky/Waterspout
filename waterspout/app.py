@@ -5,27 +5,21 @@ import inspect
 
 import tornado.web
 import tornado.options
-from tornado.options import define, options
-
-define('address', default='127.0.0.1', help='listen on the given address',
-       type=str)
-define('port', default=8888, help='run on the given port',
-       type=int)
-define('settings', default='', help='path to the settings file',
-       type=str)
-define('sentry_dsn', default='', help='your sentry dsn',
-       type=str)
 
 from jinja2 import Environment, FileSystemLoader
 
 from .config import Config
 from .utils import get_root_path
 
+from tornado.options import define, options
+
+define('config', default='', help='path to the config file', type=str)
+
 
 class Waterspout(object):
     """
     """
-    def __init__(self, import_name=None, handlers=None, **settings):
+    def __init__(self, import_name=None, handlers=None, **config):
         if handlers is None:
             handlers = []
         if import_name is not None:
@@ -38,14 +32,14 @@ class Waterspout(object):
 
         self.handlers = handlers
 
-        if "static_path" not in settings:
-            settings["static_path"] = os.path.join(self.root_path, "static")
-        if "static_handler_class" not in settings:
+        if "static_path" not in config:
+            config["static_path"] = os.path.join(self.root_path, "static")
+        if "static_handler_class" not in config:
             from .web import StaticFileHandler
-            settings["static_handler_class"] = StaticFileHandler
-        if "xsrf_cookies" not in settings:
-            settings["xsrf_cookies"] = True
-        template_path = settings.get("template_path", None)
+            config["static_handler_class"] = StaticFileHandler
+        if "xsrf_cookies" not in config:
+            config["xsrf_cookies"] = True
+        template_path = config.get("template_path", None)
         if not (template_path and isinstance(template_path, str)):
             self.template_paths = [os.path.join(self.root_path, "templates")]
         else:
@@ -53,7 +47,7 @@ class Waterspout(object):
                 template_path = os.path.join(self.root_path, template_path)
             self.template_paths = [os.path.abspath(template_path)]
 
-        self.settings = Config(self.root_path, settings)
+        self.config = Config(self.root_path, config)
 
         self._user_loader = None
 
@@ -139,14 +133,14 @@ class Waterspout(object):
     def application(self):
         application = tornado.web.Application(
             handlers=self.handlers,
-            **self.settings
+            **self.config
         )
-        auto_escape = self.settings.get('autoescape', False)
+        auto_escape = self.config.get('autoescape', False)
         env = Environment(
             autoescape=auto_escape,
             loader=FileSystemLoader(self.template_paths)
         )
-        sentry_dsn = options.sentry_dsn
+        sentry_dsn = self.config.get('sentry_dsn', None)
         if sentry_dsn:
             try:
                 from raven.contrib.tornado import AsyncSentryClient
@@ -200,13 +194,16 @@ class Waterspout(object):
         import tornado.ioloop
         application = self.application
         tornado.options.parse_command_line()
-        if options.settings:
-            tornado.options.parse_config_file(options.settings)
+        if options.config:
+            tornado.options.parse_config_file(options.config)
         http_server = HTTPServer(application)
-        http_server.listen(options.port, options.address)
+
+        address = self.config.get('address', '127.0.0.1')
+        port = int(self.config.get('port', 8888))
+
+        http_server.listen(port, address)
         import logging
-        logging.info("Start serving at %s:%s" % (options.address,
-                                                 options.port))
+        logging.info("Start serving at %s:%s" % (address, port))
         tornado.ioloop.IOLoop.instance().start()
 
 
